@@ -7,7 +7,7 @@ library(magrittr)
 library(stringr)
 
 getwd()
-myfile1 <- "/Users/seyi/CIS 663/MyProj/population.csv"
+myfile1 <- "/Users/seyi/CIS 663/population.csv"
 population <- read.csv(file = myfile1, header = FALSE, sep = ',')
 population <- population[4:55,]
 colnames(population) <- population[1,]
@@ -21,7 +21,7 @@ population$GeoName <- gsub(pattern ="[\\ ]$", replacement = "", x = population$G
 population <- mutate(population, popu_diff = year_22 - year_21)
 
 #income per capita data
-myfile2 <- "/Users/seyi/CIS 663/MyProj/percapita.csv"
+myfile2 <- "/Users/seyi/CIS 663/percapita.csv"
 percapita <- read.csv(file = myfile2, header = FALSE, sep = ',')
 percapita <- percapita[4:55,]
 colnames(percapita) <- percapita[1,]
@@ -34,7 +34,7 @@ percapita$GeoName <- gsub(pattern ="[\\*]$", replacement = "", x = percapita$Geo
 percapita$GeoName <- gsub(pattern ="[\\ ]$", replacement = "", x = percapita$GeoName)
 
 #employment data
-myfile3 <- "/Users/seyi/CIS 663/MyProj/employment.csv"
+myfile3 <- "/Users/seyi/CIS 663/employment.csv"
 employment <- read.csv(file = myfile3, header = FALSE, sep = ',')
 employment <- employment[4:55,]
 colnames(employment) <- employment[1,]
@@ -45,7 +45,7 @@ colnames(employment)[4] <- "emp_22"
 employment <- subset(employment, select = -c(emp_22))
 
 #personal income data
-myfile4 <- "/Users/seyi/CIS 663/MyProj/personalincome.csv"
+myfile4 <- "/Users/seyi/CIS 663/personalincome.csv"
 personalincome <- read.csv(file = myfile4, header = FALSE, sep = ',')
 personalincome <- personalincome[4:55,]
 colnames(personalincome) <- personalincome[1,]
@@ -67,7 +67,7 @@ economy<-left_join(population, employment, by = c("GeoFips", "GeoName")) %>%
 economy$GeoFips <- str_replace(economy$GeoFips, "0{3}$" ,"")
 
 #cost of living
-myfile5 <- "/Users/seyi/CIS 663/MyProj/Cost_of_living_Missouri_Economic_Research_and_Information_Center.csv"
+myfile5 <- "/Users/seyi/CIS 663/Cost_of_living_Missouri_Economic_Research_and_Information_Center.csv"
 cost <- read.csv(file = myfile5, header = TRUE, sep = ',')
 cost <- cost[-c(53:56), ]
 cost <- cost[-c(27), ]
@@ -75,7 +75,7 @@ rownames(cost) <- NULL
 i_cost <- cost[,c(1:3)]
 
 #state details
-myfile6 <- "/Users/seyi/CIS 663/MyProj/us-state-ansi-fips.csv"
+myfile6 <- "/Users/seyi/CIS 663/us-state-ansi-fips.csv"
 states <- read.csv(file = myfile6, header = TRUE, sep = ',')
 states$stusps <- gsub(pattern ="\\s", replacement = "", x = states$stusps)
 states$stusps <- sort(states$stusps, decreasing = FALSE)

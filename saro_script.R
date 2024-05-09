@@ -7,14 +7,14 @@ library(magrittr)
 library(stringr)
 
 getwd()
-myfile1 <- "/Users/seyi/CIS 663/population.csv"
+myfile1 <- "/Users/seyi/CIS 663/populationchange.csv"
 population <- read.csv(file = myfile1, header = FALSE, sep = ',')
 population <- population[4:55,]
 colnames(population) <- population[1,]
 population <- population[-1,]
 rownames(population) <- NULL
 colnames(population)[3] <- "year_21"
-colnames(population)[4] <- "year_22"
+#colnames(population)[4] <- "year_22"
 population$GeoName <- gsub(pattern ="[\\* ]$", replacement = "", x = population$GeoName)
 population$GeoName <- gsub(pattern ="[\\ ]$", replacement = "", x = population$GeoName)
 
@@ -87,22 +87,36 @@ livingcost <- merge(states, i_cost, by.x = "stusps", by.y = "State")
 
 #Merging economic performance and standard of living details
 whole_tb <- merge(economy, livingcost, by.x = "GeoName", by.y = "stname")
-whole_tb <- whole_tb[, c(2,1,9,12,11,3,4,5,6,7,8)]
+whole_tb <- whole_tb[, c(2,1,7,10,9,3,4,5,6)]
 colnames(whole_tb)[4] <- "col_index"
 colnames(whole_tb)[5] <- "col_rank"
 
 
 #Analysis
 
-sum(economy$popu_diff <= 0)
-sum(economy$popu_diff >= 0)
+sum(whole_tb$year_21 <= 0)
+sum(whole_tb$year_21 >= 0)
 
-whole_tb[whole_tb$popu_diff < 0, ]
-economy[economy$popu_diff > 0, ]
+pop_decrease <- whole_tb[whole_tb$year_21 < 0, ]
+pop_increase <- whole_tb[whole_tb$year_21 > 0, ]
 
-whole_tb %>% filter(popu_diff<0) %>% select(GeoName, col_index) %>% summarise(mean(col_index))
-whole_tb %>% filter(popu_diff>0) %>% select(GeoName, col_index) %>% summarise(mean(col_index))
+meancol_pop_decrease <- whole_tb %>% filter(year_21<0) %>% 
+  select(GeoName, col_index) %>% summarise(mean(col_index))
+meancol_pop_increase <- whole_tb %>% filter(year>0) %>% 
+  select(GeoName, col_index) %>% summarise(mean(col_index))
 
-ggplot(data = whole_tb, aes(x= emp_21)) + geom_histogram()
-ggplot(data = whole_tb, aes(x = perc_21)) + geom_histogram()
-ggplot(data = whole_tb, aes(x = perinc_21)) + geom_histogram()
+#Visualization
+#ggplot(data = whole_tb, aes(x= emp_21)) + geom_histogram()
+#ggplot(data = whole_tb, aes(x = perc_21)) + geom_histogram()
+#ggplot(data = whole_tb, aes(x = perinc_21)) + geom_histogram()
+#ggplot(whole_tb, aes(x = year_21, y = log(col_index))) + geom_point()
+
+#Simple Regression Analysis
+pop_and_col <- lm(year_21 ~ col_index, data = whole_tb)
+pop_and_emp <- lm(year_21 ~ emp_21, data = whole_tb)
+pop_and_perc <- lm(year_21 ~ perc_21, data = whole_tb)
+pop_and_perinc <- lm(year_21 ~ perinc_21, data = whole_tb)
+
+#Multiple Regression
+populationLM <- lm(year_21 ~ col_index + log(emp_21) + log(perc_21) + 
+                     log(perinc_21), data=whole_tb)

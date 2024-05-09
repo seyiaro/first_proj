@@ -1,0 +1,237 @@
+---
+title: "Effects of Population Change"
+author: "Seyi Aro"
+date: "2024-04-30"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Abstract
+
+The events of the pandemic left an endearing effect on the economies of many countries. In the U, S., several new headlines reported an increase in the migration patterns with the country in the early periods of lockdown lifts. This paper explores the patterns of population change in all 50 states and District of Columbia from 2021-2022. Additionally, it uses linear regression model to analyze the relationship between population change and other economic factors.
+
+## Introduction
+
+In the early periods following the pandemic and lockdowns, there were several reports surrounding state-to-state migration in the U.S. According to the U.S. Census Bureau, the number of people who moved between states rose from 7.9 million in 2021 to 8.4 million in 2022 (Ismail, 2023). One of the motivating factors for this move is the rise in cost of living. A survey by a moving company found that the number of people who moved because of high cost of living within their current state doubled between 2020 and 2021 from 3% to 6.7% (United Van Lines, 2022).
+
+This paper explores the relationship between states that saw a decrease in population and their cost-of-living indexes. The assumption is that the states that saw a decrease in population size have, on average, higher cost of living indexes than states that increased in size. It also looks at other economic factors that may contribute to the change in population among different U.S. states and District of Columbia. A linear regression model was used to explore the relationship. Between them.
+
+## Literature
+
+Two theories exist among economist and those that study the impact of population growth. The first is that population growth stimulates economic growth and the second posits that there is a negative relationship between the two variables. 
+
+The traditional view is that increasing rates of population has adverse effects on economic growth (Johnson, 1999). Many studies have been conducted to either support or disagree with this view. Sinding (2009) argues that there is substantial evidence to support the view that a declining demographic positively impacts economic growth in both the micro and macro levels of economic development. The author recommends implementing policies that support a reduction in birth rate among developing countries such as those in Africa.
+
+In contrast, Thuku et. Al (2013) finds using a time series data between the period of 1963 to 2009 that among the three theories, there is a positive relationship between population growth and economic growth in Kenya, a developing country on Africa. They argue that increasing demographic reinforces technological progress and economies of scale. 
+
+While Ali et al. explains that while population growth positively impacts economic growth it negatively affects other economic factors that can in turn stifle the growth of an economy. The authors write that although growth in population leads to economic growth, it negatively impacts unemployment rates.
+
+A great deal of research has been done on the role population growth plays on economic growth. This paper looks into how some significant economic variables affect population. 
+
+## Data
+
+The sample data for this project was collected from three sources: the U.S. Bureau of Economic Analysis (BEA), Kaggle, and GitHub. It includes population change, employment, per capita income, and personal income data in 2021 from BEA. Cost of living data in 2023 from Kaggle and lastly, information about all 50 states and District of Columbia from GitHub. 
+
+The data retrieved from BEA contained the GeoFIPS, a number used to uniquely identify geographic areas in the U.S. and GeoName (the state names) of all 50 state in the U.S. including District of Columbia.
+
+The cost of living data downloaded from kaggle contained indicies of the total cost of living (COL), COL rankings,  grocery, transportation, housing, utilities, and miscellanaus expenses in all 50 states in the U.S., District of Columbia and Puetorico.
+
+Lastly, state data served as bridge to join all the data.
+
+```{r, echo=FALSE}
+#loading data files
+myfile1 <- "/Users/seyi/CIS 663/populationchange.csv"
+myfile2 <- "/Users/seyi/CIS 663/percapita.csv" 
+myfile3 <- "/Users/seyi/CIS 663/employment.csv"
+myfile4 <- "/Users/seyi/CIS 663/personalincome.csv"
+myfile5 <- "/Users/seyi/CIS 663/Cost_of_living_Missouri_Economic_Research_and_Information_Center.csv"
+myfile6 <- "/Users/seyi/CIS 663/us-state-ansi-fips.csv"
+```
+
+## Methodology
+
+This section details the process of reading and cleaning all the tables, and concatenating them into one dataframe. After downloading the files, they were loaded into R for cleaning. A quick review of the files in Excel showed that they were mostly cleaned.
+
+Most of the data preparation process involved selecting only the rows needed for analysis. For example, all the files retrieved from the BEA had rows describing the data and its source, this were handled with one line of code that selected only the rows with the needed data. Also, using the stringr package, the strings containing unwanted characters and leading space were removed.
+
+
+```{r population data, echo=FALSE}
+population <- read.csv(file = myfile1, header = FALSE, sep = ',') #reading csv file
+population <- population[4:55,] #selecting the needed rows
+colnames(population) <- population[1,] #reassigning column names
+population <- population[-1,] #removing duplicate
+rownames(population) <- NULL #renumbering row indexes
+colnames(population)[3] <- "pop_21" #renaming a column where "pop_21" is population change from 2021-2022
+```
+
+```{r, echo=FALSE}
+library(stringr) #loading stringr package
+population$GeoName <- gsub(pattern ="[\\* ]$", replacement = "", x = population$GeoName) #removing * character from the data
+population$GeoName <- gsub(pattern ="[\\ ]$", replacement = "", x = population$GeoName) #removing leading spaces.
+```
+
+```{r employment data, echo=FALSE}
+employment <- read.csv(file = myfile3, header = FALSE, sep = ',') #loading the data
+employment <- employment[4:55,] #selecting the needed rows
+colnames(employment) <- employment[1,] #reassigning column names
+employment <- employment[-1,] #removing duplicate
+rownames(employment) <- NULL
+colnames(employment)[3] <- "emp_21" #renaming a column where "emp_21" is 2021 employment data
+colnames(employment)[4] <- "emp_22"
+employment <- subset(employment, select = -c(emp_22)) #removing 2022 employment data
+```
+
+```{r income per capita, echo=FALSE}
+percapita <- read.csv(file = myfile2, header = FALSE, sep = ',') #loading income per capita data
+percapita <- percapita[4:55,]
+colnames(percapita) <- percapita[1,]
+percapita <- percapita[-1,]
+rownames(percapita) <- NULL
+colnames(percapita)[3] <- "perc_21" #renaming columns where "perc_21" is 2021 per capita data
+colnames(percapita)[4] <- "perc_22"
+percapita <- subset(percapita, select = -c(perc_22))
+#removing unwanted strings using regular expressions
+percapita$GeoName <- gsub(pattern ="[\\*]$", replacement = "", x = percapita$GeoName)
+percapita$GeoName <- gsub(pattern ="[\\ ]$", replacement = "", x = percapita$GeoName)
+```
+
+```{r personal income, echo=FALSE}
+#loading the data
+myfile4 <- "/Users/seyi/CIS 663/personalincome.csv"
+personalincome <- read.csv(file = myfile4, header = FALSE, sep = ',')
+#cleaning the data
+personalincome <- personalincome[4:55,]
+colnames(personalincome) <- personalincome[1,]
+personalincome <- personalincome[-1,]
+rownames(personalincome) <- NULL
+#renaming columns where "perinc_21" is 2021 personal income data of all 50 states and District of Columbia
+colnames(personalincome)[3] <- "perinc_21"
+colnames(personalincome)[4] <- "perinc_22"
+personalincome <- subset(personalincome, select = -c(perinc_22))
+#removing unwanted strings
+personalincome$GeoName <- gsub(pattern ="[\\*]$", replacement = "", x = personalincome$GeoName)
+personalincome$GeoName <- gsub(pattern ="[\\ ]$", replacement = "", x = personalincome$GeoName)
+```
+
+After cleaning all the data files individually, they were combined into one table. The data downloaded from BEA: population, employment, income per capita, and personal income were first joined by their 'GeoName' and 'GeoFIPS' columns using the join function in the dplyr package to form the 'economy' table. 
+
+```{r combining all the data into one, echo=FALSE}
+library(dplyr)
+economy<-left_join(population, employment, by = c("GeoFips", "GeoName")) %>%
+  left_join(., percapita, by = c("GeoFips","GeoName")) %>%
+  left_join(., personalincome, by = c("GeoFips","GeoName"))
+economy$GeoFips <- str_replace(economy$GeoFips, "0{3}$" ,"") #renumbering GeoFips column
+```
+
+```{r cost of living index data, echo=FALSE}
+cost <- read.csv(file = myfile5, header = TRUE, sep = ',') #loading the data
+#removing unwanted rows and columns
+cost <- cost[-c(53:56), ]
+cost <- cost[-c(27), ]
+rownames(cost) <- NULL
+cost <- cost[,c(1:3)] 
+```
+
+```{r state data as foreign key, echo=FALSE}
+states <- read.csv(file = myfile6, header = TRUE, sep = ',')
+states$stusps <- gsub(pattern ="\\s", replacement = "", x = states$stusps) #removing spaces
+states$stusps <- sort(states$stusps, decreasing = FALSE) #sorting the stusps or state appreviation column
+```
+
+```{r merging cost of living and state data tables, echo=FALSE}
+cost <- cost %>% arrange(State)
+states <- states %>% arrange(stusps)
+livingcost <- merge(states, cost, by.x = "stusps", by.y = "State")
+```
+
+To pair cost of living with the economy dataset, the table containing information about all 50 states and the district of columbia was first merged with cost of living dataset by their abbreviations and then joined to the economy data to form a 'whole_tb' data. 
+
+```{r combining economy and cost of living data, echo=FALSE}
+whole_tb <- merge(economy, livingcost, by.x = "GeoName", by.y = "stname")
+whole_tb <- whole_tb[, c(2,1,7,10,9,3,4,5,6)] #restructuring the columns 
+#renaming columns
+colnames(whole_tb)[4] <- "col_index"
+colnames(whole_tb)[5] <- "col_rank"
+```
+
+```{r, echo=FALSE}
+head(whole_tb)
+```
+
+## Results
+
+This section discusses the results from doing analysis, and using regression models to explore the relationship between population and other variables in the dataset, specifically cost of living. It first uses a simple regression model to look at the relationship between population change and any one variable before using a multiole linear regression model for further analysis.
+
+The table below shows a summary of all the continuous variables present in the data.
+
+```{r summary table, echo=FALSE}
+library(stargazer)
+summary_tb <-stargazer(whole_tb, type = "html", align = TRUE) #getting a well-structured table
+```
+
+```{r Analysis, echo=FALSE}
+library(magrittr)
+#separatung states with positive population change from those with negative.
+pop_decrease <- whole_tb[whole_tb$pop_21 < 0, ]
+pop_increase <- whole_tb[whole_tb$pop_21 > 0, ]
+
+meancol_pop_decrease <- whole_tb %>% filter(pop_21<0) %>% 
+  select(GeoName, col_index) %>% summarise(mean(col_index))
+meancol_pop_increase <- whole_tb %>% filter(pop_21>0) %>% 
+  select(GeoName, col_index) %>% summarise(mean(col_index))
+
+summary_pop_decrease <- summary(pop_decrease)
+summary_pop_decrease <- summary(pop_increase)
+
+```
+
+The results shows that 16 states in the U.S. saw a reduction in population size. Among them are, perhaps not surprisingly, New England states like New York, New Jersey, Pennsylvania, Masschussetts, Maryland, etc. Other notable states are Carlifornia, Hawaii, Illinois and Alaska. On the other hand, 35 states saw an increase in population after the effects of the pandemic. Furthermore, the average cost of living index among states with negative change in population is 109.8, compared to 101.4 among states that saw a positive change. 
+
+Before building a regression model, a scatter plot of population change plotted against cost of living shows a positive relationship. This is different from the assumption that cost of living negatively impacts population.
+
+```{r, echo=FALSE}
+library(ggplot2)
+ ggplot(whole_tb, aes(x = pop_21, y = col_index))+ geom_point() #scatter plot for popuation and cost of living variables
+ 
+```
+
+The summary table for the regression model that analyzes the relationship between population and cost of living index shows that one point increase in the cost of living index in a particular state results in a 0.005 percent decrease in the population. However, the relationship between both variables is not statistically significant (p-value: 0.418 > 0.005).
+
+```{r simple regression, echo=FALSE}
+pop_and_col <- lm(pop_21 ~ col_index, data = whole_tb) #simple regression
+```
+
+What happens when other variables are added to the model?
+
+```{r, echo=FALSE}
+#histograms used to view the individual variables
+hist_col <- ggplot(whole_tb, aes(x=col_index)) + geom_histogram() 
+hist_emp <- ggplot(whole_tb, aes(x=emp_21)) + geom_histogram() 
+hist_perc <- ggplot(whole_tb, aes(x=perc_21)) + geom_histogram() 
+hist_perinc <- ggplot(whole_tb, aes(x=perinc_21)) + geom_histogram() 
+```
+
+
+```{r Multiple Regression, echo=FALSE}
+populationLM <- (lm(pop_21 ~ log(col_index) + log(emp_21) + log(perc_21) + 
+                     log(perinc_21), data=whole_tb)) #building a multiple regression model
+```
+
+```{r, echo=FALSE}
+desc_tb <-stargazer(populationLM, type = "html", align = TRUE) #getting a well-structured table
+```
+
+Using a multiple regression model, one unit increase in cost of living index leads to 0.00159 increase in pouplation change and the relationship is not statistically significant since p-value, 0.784, is greater than 0.005. Also, one percent increase in employment leads to 2.633 percent change in population. A similar result is observed in income per capita which increase population by 0.05 percent. While one percent increase in personal income leads to a 2.545 decrease in population. 
+
+The overall model is not statistically significant since p-value (0.1586) is greater than 0.05 and F-stat is 1.735. Lastly, only 5.6 percent of the variance in the change in population is explained by the independent variables.
+
+## Implications
+
+This study is largely exploratory and therefore, makes no conclusion about the relationship between variables. An indepth study of the effect of population and other economic variables will require larger data perhaps a time series data that analyzes the relationships among variables during the periods before the pandemic and after.
+
+## Conclusion
+This project explores the process of using R to collect and clean data, perform analysis and interpret statistical models using simple and linear regression models.
+
+## References
